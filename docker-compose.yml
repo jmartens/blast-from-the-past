@@ -1,0 +1,15 @@
+version: '2'
+
+services:
+  db:
+    image: mysql:latest
+    restart: always
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE = ./secrets/mysql-root-password
+      MYSQL_DATABASE_FILE = ./secrets/mysql-db
+      MYQSL_USER_FILE = ./secrets/mysql-user
+      MYSQL_PASSWORD_FILE = ./secrets/mysql-password
+    ports:
+      - "3306:3306"
