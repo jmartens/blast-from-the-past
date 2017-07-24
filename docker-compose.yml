@@ -13,3 +13,12 @@ services:
       MYSQL_PASSWORD_FILE = ./secrets/mysql-password
     ports:
       - "3306:3306"
+
+  worker:
+    build: python:lastest
+    environment:
+    ports:
+    links:
+      - db
+    volumes:
+      - ./worker:/opt/bftp/worker
