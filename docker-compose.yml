@@ -2,6 +2,7 @@ version: '2'
 
 services:
   db:
+    container_name: bftp_db
     image: mysql:latest
     restart: always
     volumes:
@@ -16,6 +17,7 @@ services:
 
   worker:
     image: python:latest
+    container_name: bftp_w1
     links:
       - db
     volumes:
