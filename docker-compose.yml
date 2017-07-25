@@ -16,8 +16,8 @@ services:
       - "3306:3306"
 
   worker:
-    image: python:latest
     container_name: bftp_w1
+    build: worker
     links:
       - db
     volumes:
