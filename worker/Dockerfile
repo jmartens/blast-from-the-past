@@ -1,4 +1,5 @@
-FROM python:latest
+FROM bamos/openface:latest
+
 ADD . /worker
 WORKDIR /worker
 
