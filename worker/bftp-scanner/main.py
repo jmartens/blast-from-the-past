@@ -4,6 +4,19 @@ import logging
 from watchdog.observers import Observer
 from watchdog.events import LoggingEventHandler
 
+# Listing files
+import os
+import glob
+import re
+
+# application setup
+import argparse
+
+# Face recognition
+import openface
+import cv2
+import imagehash
+from PIL import Image
 
 class MyEventHandler(LoggingEventHandler):
 
@@ -23,6 +36,19 @@ class MyEventHandler(LoggingEventHandler):
     def on_modified(self, event):
         what = 'directory' if event.is_directory else 'file'
         logging.info("Modified %s: %s", what, event.src_path)
+
+
+def findfiletypesinfolder(path, pattern):
+    logging.debug("Finding image files in %s", path)
+    files = filter(pattern.match, glob.glob(os.path.join(path, '*/*')))
+    logging.debug("Found %d images in %s", len(files), path)
+    return files
+
+
+def findimagesinfolder(path):
+    pattern = r'(.*\.(?:jpe?g|png|bmp))'
+    r = re.compile(pattern, re.IGNORECASE)
+    return findfiletypesinfolder(path, r)
 
 
 if __name__ == "__main__":
