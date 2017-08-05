@@ -29,6 +29,7 @@ class FilesystemScanner(Thread):
         return self.findfiletypesinfolder(path, r)
 
     def run(self):
+        self.name = __name__
         logging.info('Discovering image files in: %s', self.path)
         for f in map(unicode, self.findimagesinfolder(self.path)):
             logging.info('Processing file: %s', f)
