@@ -59,6 +59,13 @@ class Object(BaseModel):
     modified = DateTimeField(constraints=[SQL('NULL ON UPDATE CURRENT_TIMESTAMP')])
 
 
+class Queue(BaseModel):
+    id = PrimaryKeyField()
+    image = ForeignKeyField(Image, related_name='queuedImages')
+    priority = SmallIntegerField(null=True, default=None)
+    status = SmallIntegerField(null=True, default=None)
+
+
 def create_my_tables():
     logging.info('Creating database tables')
     db.create_tables([User, Image, ROI, Object, Queue], safe=True)

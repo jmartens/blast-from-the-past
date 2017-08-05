@@ -74,12 +74,20 @@ if __name__ == "__main__":
             fsScanner.path = args.path
             fsScanner.start()
 
+            # Start face detector
+            faceDetector = FaceDetector.FaceDetector()
+            faceDetector.align = openface.AlignDlib(args.dlibFacePredictor)
+            faceDetector.net = openface.TorchNeuralNet(args.networkModel, imgDim=args.imgDim, cuda=args.cuda)
+            faceDetector.imgDim = args.imgDim or 96
+            faceDetector.start()
+
             while True:
                 logging.debug('Sleeping for 1 second...')
                 time.sleep(1)
 
         except KeyboardInterrupt:
             fsScanner.stop()
+            faceDetector.stop()
             db.close()
 
     except peewee.OperationalError:
