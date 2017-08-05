@@ -21,4 +21,3 @@ services:
     links:
       - db
     volumes:
-      - ./worker:/opt/bftp/worker

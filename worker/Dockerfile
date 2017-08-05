@@ -1,8 +1,9 @@
 FROM bamos/openface:latest
 
-ADD . /worker
-WORKDIR /worker
+ADD requirements.txt /root/
+RUN pip install -r /root/requirements.txt
 
-RUN pip install -r requirements.txt
+WORKDIR /worker/
+ADD bftp-scanner/ /worker/
 
-CMD ["python", "bftp-scanner/main.py", "/opt/bftp/worker/"]
+CMD ["python", "main.py", "--path", "/var/bftp/images/"]
