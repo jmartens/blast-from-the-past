@@ -1,61 +1,29 @@
 import time
-import logging
 from watchdog.observers import Observer
-from watchdog.events import LoggingEventHandler
+import threading
 
-# Listing files
+# Database
+from database import *
+import peewee
+from playhouse.db_url import connect
 import os
-import glob
-import re
 
 # application setup
 import argparse
 
 # Face recognition
 import openface
-import cv2
-import imagehash
-from PIL import Image as PILImage
 
-from database import *
+# File system monitoring
+import FilesystemObserver
+import FilesystemScanner
+import FaceDetector
 
-import datetime
+class MyThread(threading.Thread):
 
-class MyEventHandler(LoggingEventHandler):
-
-    def on_moved(self, event):
-        what = 'directory' if event.is_directory else 'file'
-        logging.info("Moved %s: from %s to %s", what, event.src_path,
-                     event.dest_path)
-
-    def on_created(self, event):
-        what = 'directory' if event.is_directory else 'file'
-        logging.info("Created %s: %s", what, event.src_path)
-
-    def on_deleted(self, event):
-        what = 'directory' if event.is_directory else 'file'
-        logging.info("Deleted %s: %s", what, event.src_path)
-
-    def on_modified(self, event):
-        what = 'directory' if event.is_directory else 'file'
-        logging.info("Modified %s: %s", what, event.src_path)
-
-    def prcocess(selfs, file):
-        logging.info("Processing: %s", file)
-
-
-def findfiletypesinfolder(path, pattern):
-    logging.debug("Finding image files in %s", path)
-    files = filter(pattern.match, glob.glob(os.path.join(path, '*/*')))
-    logging.debug("Found %d images in %s", len(files), path)
-    return files
-
-
-def findimagesinfolder(path):
-    pattern = r'(.*\.(?:jpe?g|png|bmp))'
-    r = re.compile(pattern, re.IGNORECASE)
-    return findfiletypesinfolder(path, r)
-
+    def run(self):
+        logging.debug('running')
+        return
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
@@ -63,6 +31,7 @@ if __name__ == "__main__":
                         datefmt='%Y-%m-%d %H:%M:%S')
 
     # Setup openface
+    logging.info('Parsing arguments')
     fileDir = '/root/openface/demos/'
     modelDir = os.path.join(fileDir, '..', 'models')
     dlibModelDir = os.path.join(modelDir, 'dlib')
@@ -85,95 +54,33 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    path = args.path;
-
-    event_handler = MyEventHandler()
-    observer = Observer()
-    observer.schedule(event_handler, path, recursive=True)
-    observer.start()
-
-    align = openface.AlignDlib(args.dlibFacePredictor)
-    net = openface.TorchNeuralNet(args.networkModel, imgDim=args.imgDim, cuda=args.cuda)
-
-    # try:
-    # logging.debug('Setting up database connection')
-
-    # logging.debug('mysql:///%s:%s@%s:%d/%s', user, password, host, port, database)
-    # db.connect()
-    create_my_tables()
-    logging.info('Connected to database')
-
-    logging.info('Discovering image files in: %s', path)
-    for f in map(unicode, findimagesinfolder(path)):
-        logging.info('Processing file: %s', f)
-        process = True
-
-        image = cv2.imread(f)
-        if image is None:
-            logging.error('Can not read file: %s', f)
-            process = False
-
-        else:
-            logging.debug('Checking against %s against database', f)
-            record, process = Image.get_or_create(
-                path=os.path.dirname(f),
-                name=os.path.basename(f),
-                size=image.size,
-                created=datetime.datetime.fromtimestamp(os.path.getctime(f)).strftime('%Y-%m-%d %H:%M:%S'),
-                modified=datetime.datetime.fromtimestamp(os.path.getmtime(f)).strftime('%Y-%m-%d %H:%M:%S'),
-                hash=str(imagehash.phash(PILImage.fromarray(image))))
-
-            if not process:
-                logging.debug('We have seen %s before, checking if it is modified', f)
-                if (record.modified == datetime.datetime.fromtimestamp(os.path.getmtime(f)).strftime('%Y-%m-%d %H:%M:%S')) & \
-                        (record.created == datetime.datetime.fromtimestamp(os.path.getctime(f)).strftime('%Y-%m-%d %H:%M:%S')) & \
-                        os.path.getsize(f) == record.size:
-                    logging.info('Skipping %s as it already exists and seems not to be modified', f)
-                    process = False
-
-        if process:
-            logging.info('Detecting faces...')
-            faces = align.getAllFaceBoundingBoxes(image)
-            cntFaces = len(faces)
-            i = 0;
-            for face in faces:
-                i = i + 1;
-                logging.debug('Face %d found at (%d, %d, %d, %d)', i, face.left(), face.top(), face.right(), face.bottom())
-                logging.debug('Store bounding box location in database and link to image');
-                roirec = ROI.create(image=record.id,
-                           left=face.left(),
-                           top=face.top(),
-                           bottom=face.bottom(),
-                           right=face.right())
-                logging.info('Processing face %d of %d', i, cntFaces)
-                # Process ROI for feeding it to the model
-                logging.debug('Aligning face %d of %d', i, cntFaces)
-                alignedFace = align.align(
-                    args.imgDim,
-                    image,
-                    face,
-                    landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
-                # Store processed ROI on filesystem
-                phash = str(imagehash.phash(PILImage.fromarray(alignedFace)))
-                logging.debug('Hashed face %d of %d is: %s', i, cntFaces, phash)
-                hashedImage = os.path.join('/var/bftp/hashes', phash + '.jpg')
-                cv2.imwrite(hashedImage, alignedFace)
-                Object.create(roi=roirec.id,
-                              hash=phash,
-                              path=hashedImage,
-                              userid=None)
-                logging.debug('Saved face %d (%s) as %s', i, phash, hashedImage)
-
-            logging.info('Found %d faces in %s', i, f)
-
-    db.close()
-#    except Exception:
-#        logging.error('Unable to connect to database')
-
-
     try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        observer.stop()
-    observer.join()
+        logging.info('Connecting to the database')
+        logging.debug('Getting database parameters')
+        database = os.environ.get('MYSQL_DATABASE') or 'bftp'
+        user = os.environ.get('MYSQL_USER') or 'bftp'
+        password = os.environ.get('MYSQL_PASSWORD') or 'bftp'
+        host = os.environ.get('MYSQL_HOSTNAME') or 'db'
+        port = os.environ.get('MYSQL_PORT') or 3306
+        logging.debug('Connection string is mysql:///%s:%s@%s:%d/%s', user, password, host, port, database)
+        db.init(database, user=user, password=password, host=host, port=port)
+
+        create_my_tables()
+
+        try:
+
+            # Start file system scanner
+            fsScanner = FilesystemScanner.FilesystemScanner()
+            fsScanner.path = args.path
+            fsScanner.start()
+
+            while True:
+                logging.debug('Sleeping for 1 second...')
+                time.sleep(1)
+
+        except KeyboardInterrupt:
+            fsScanner.stop()
+            db.close()
+
+    except peewee.OperationalError:
+        logging.error('There was an error connecting to the database, halting...')

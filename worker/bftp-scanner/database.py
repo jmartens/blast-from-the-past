@@ -1,19 +1,9 @@
 # Database
 
 from peewee import *
-from playhouse.db_url import connect
-import os
 import logging
 
-
-# logging.debug('Setting up database connection')
-# host = 'db'
-# database = os.environ.get('MYSQL_DATABASE')
-# user = os.environ.get('MYSQL_USER')
-# password = os.environ.get('MYSQL_PASSWORD')
-# port = os.environ.get('MYSQL_PORT') or 3306
-# logging.debug('mysql:///%s:%s@%s:%d/%s', user, password, host, port, database)
-db = connect("mysql://bftp:bftp@db:3306/bftp")
+db = MySQLDatabase(None)
 
 
 class BaseModel(Model):
@@ -70,5 +60,6 @@ class Object(BaseModel):
 
 
 def create_my_tables():
-    db.connect()
-    db.create_tables([User, Image, ROI, Object], safe=True)
+    logging.info('Creating database tables')
+    db.create_tables([User, Image, ROI, Object, Queue], safe=True)
+    logging.info('Creating database tables finished')
