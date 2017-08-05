@@ -54,7 +54,7 @@ class ROI(BaseModel):
 
     class Meta:
         indexes = (
-            (('top', 'left', 'bottom', 'right'), True),
+            (('top', 'left', 'bottom', 'right'), False),
             (('image', 'top', 'left', 'bottom', 'right'), True),
         )
 
