@@ -15,7 +15,11 @@ import argparse
 import openface
 import cv2
 import imagehash
-from PIL import Image
+from PIL import Image as PILImage
+
+from database import *
+
+import datetime
 
 class MyEventHandler(LoggingEventHandler):
 
@@ -36,6 +40,9 @@ class MyEventHandler(LoggingEventHandler):
         what = 'directory' if event.is_directory else 'file'
         logging.info("Modified %s: %s", what, event.src_path)
 
+    def prcocess(selfs, file):
+        logging.info("Processing: %s", file)
+
 
 def findfiletypesinfolder(path, pattern):
     logging.debug("Finding image files in %s", path)
@@ -51,8 +58,8 @@ def findimagesinfolder(path):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(message)s',
+    logging.basicConfig(level=logging.DEBUG,
+                        format='%(asctime)s %(levelname)s [%(threadName)s] %(name)s %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
 
     # Setup openface
@@ -88,22 +95,43 @@ if __name__ == "__main__":
     align = openface.AlignDlib(args.dlibFacePredictor)
     net = openface.TorchNeuralNet(args.networkModel, imgDim=args.imgDim, cuda=args.cuda)
 
+    # try:
+    # logging.debug('Setting up database connection')
+
+    # logging.debug('mysql:///%s:%s@%s:%d/%s', user, password, host, port, database)
+    # db.connect()
+    create_my_tables()
+    logging.info('Connected to database')
+
     logging.info('Discovering image files in: %s', path)
     for f in map(unicode, findimagesinfolder(path)):
         logging.info('Processing file: %s', f)
-        logging.debug('TODO: Checking for file in database: %s', f)
-        # If exists,
-        # logging.debug('We have seen %s before, checking if it is modified', f)
-        # logging.info('Skipping %s as it already exists and seems not to be modified', f)
-        # If last_modified and size agree skip
-        # logging.info('Skipping %s as after deep inspection it seems not to be modified', f)
-        # If hash agrees skip
-        # If not exists or changed (size, last modified date, hash?) process
+        process = True
 
         image = cv2.imread(f)
         if image is None:
-            logging.error('Can not read file: %s', file)
+            logging.error('Can not read file: %s', f)
+            process = False
+
         else:
+            logging.debug('Checking against %s against database', f)
+            record, process = Image.get_or_create(
+                path=os.path.dirname(f),
+                name=os.path.basename(f),
+                size=image.size,
+                created=datetime.datetime.fromtimestamp(os.path.getctime(f)).strftime('%Y-%m-%d %H:%M:%S'),
+                modified=datetime.datetime.fromtimestamp(os.path.getmtime(f)).strftime('%Y-%m-%d %H:%M:%S'),
+                hash=str(imagehash.phash(PILImage.fromarray(image))))
+
+            if not process:
+                logging.debug('We have seen %s before, checking if it is modified', f)
+                if (record.modified == datetime.datetime.fromtimestamp(os.path.getmtime(f)).strftime('%Y-%m-%d %H:%M:%S')) & \
+                        (record.created == datetime.datetime.fromtimestamp(os.path.getctime(f)).strftime('%Y-%m-%d %H:%M:%S')) & \
+                        os.path.getsize(f) == record.size:
+                    logging.info('Skipping %s as it already exists and seems not to be modified', f)
+                    process = False
+
+        if process:
             logging.info('Detecting faces...')
             faces = align.getAllFaceBoundingBoxes(image)
             cntFaces = len(faces)
@@ -111,24 +139,38 @@ if __name__ == "__main__":
             for face in faces:
                 i = i + 1;
                 logging.debug('Face %d found at (%d, %d, %d, %d)', i, face.left(), face.top(), face.right(), face.bottom())
+                logging.debug('Store bounding box location in database and link to image');
+                roirec = ROI.create(image=record.id,
+                           left=face.left(),
+                           top=face.top(),
+                           bottom=face.bottom(),
+                           right=face.right())
                 logging.info('Processing face %d of %d', i, cntFaces)
-                # TODO: store bounding box location in database and link to image
                 # Process ROI for feeding it to the model
-                logging.info('Aligning face %d of %d', i, cntFaces)
+                logging.debug('Aligning face %d of %d', i, cntFaces)
                 alignedFace = align.align(
                     args.imgDim,
                     image,
                     face,
                     landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
                 # Store processed ROI on filesystem
-                phash = str(imagehash.phash(Image.fromarray(alignedFace)))
+                phash = str(imagehash.phash(PILImage.fromarray(alignedFace)))
                 logging.debug('Hashed face %d of %d is: %s', i, cntFaces, phash)
                 hashedImage = os.path.join('/var/bftp/hashes', phash + '.jpg')
                 cv2.imwrite(hashedImage, alignedFace)
+                Object.create(roi=roirec.id,
+                              hash=phash,
+                              path=hashedImage,
+                              userid=None)
                 logging.debug('Saved face %d (%s) as %s', i, phash, hashedImage)
-                # TODO: store processed ROI in database
 
             logging.info('Found %d faces in %s', i, f)
+
+    db.close()
+#    except Exception:
+#        logging.error('Unable to connect to database')
+
+
     try:
         while True:
             time.sleep(1)

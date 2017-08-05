@@ -1,1 +1,7 @@
 watchdog
+peewee
+pyOpenSSL
+ndg-httpsclient
+pyasn1
+pymysql
+Pillow
