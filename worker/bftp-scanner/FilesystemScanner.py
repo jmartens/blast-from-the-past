@@ -49,10 +49,6 @@ class FilesystemScanner(Thread):
                 modified=datetime.datetime.fromtimestamp(os.path.getmtime(f)).strftime('%Y-%m-%d %H:%M:%S'),
                 hash=str(imagehash.phash(PILImage.fromarray(image))))
 
-            logging.debug('Size: (%s) %s/%s', record.size == os.path.getsize(f), record.size, os.path.getsize(f))
-            logging.debug('Hash: (%s) %s/%s', record.hash == str(imagehash.phash(PILImage.fromarray(image))), record.hash, str(imagehash.phash(PILImage.fromarray(image))))
-            logging.debug('ID: %d', record.id)
-
             if created:
                 logging.info('Adding %s to the queue as it seems to be new', f)
                 Queue.create(image=record.id)
