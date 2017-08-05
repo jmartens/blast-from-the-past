@@ -108,3 +108,5 @@ secrets/
 
 # mysql
 mysql/
+hashes/
+images/
