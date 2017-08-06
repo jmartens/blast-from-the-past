@@ -15,6 +15,23 @@ services:
     ports:
       - "3306:3306"
 
+  web:
+    container_name: bftp_web
+    build: web
+    links:
+      - db
+    volumes:
+      - ./images:/var/bftp/images/
+      - ./hashes:/var/bftp/hashes/
+      - H:\My Documents\My Pictures:/var/bftp/images/local
+      - C:\Users\jonathan.martens\Dropbox\Camera Uploads:/var/bftp/images/dropbox
+    environment:
+      - MYSQL_DATABASE=bftp
+      - MYSQL_USER=bftp
+      - MYSQL_PASSWORD=bftp
+    ports:
+      - "8000:8000"
+
   worker:
     container_name: bftp_w1
     build: worker
