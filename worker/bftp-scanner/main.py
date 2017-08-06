@@ -5,7 +5,6 @@ import threading
 # Database
 from database import *
 import peewee
-from playhouse.db_url import connect
 import os
 
 # application setup
