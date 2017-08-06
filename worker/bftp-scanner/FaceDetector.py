@@ -14,8 +14,12 @@ import openface
 
 class FaceDetector(Thread):
 
-    def run(self):
+    def __init__(self):
+        Thread.__init__(self)
+        self.failurecount = 0
         self.name = __name__
+
+    def run(self):
         logging.info('Detecting faces...')
         start = datetime.datetime.now()
         for file in Image.select().join(Queue).where(Queue.status==None):
