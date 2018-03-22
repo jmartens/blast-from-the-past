@@ -18,19 +18,27 @@ services:
   web:
     container_name: bftp_web
     build: web
+
+  web-new:
+    container_name: btp_web_new
+    build:
+      context: https://github.com/jmartens/alpine-flask.git#patch-1
     links:
       - db
-    volumes:
-      - ./images:/var/bftp/images/
-      - ./hashes:/var/bftp/hashes/
-      - H:\My Documents\My Pictures:/var/bftp/images/local
-      - C:\Users\jonathan.martens\Dropbox\Camera Uploads:/var/bftp/images/dropbox
     environment:
+      - MYSQL_HOST=db
       - MYSQL_DATABASE=bftp
       - MYSQL_USER=bftp
       - MYSQL_PASSWORD=bftp
     ports:
-      - "8000:8000"
+      - "8080:80"
+    volumes:
+      # Mount apps root folder as a volume for convenience and quick reload
+      - ./web2:/app
+      # Mount storage of hashes as a volume
+      - ./hashes:/app/app/static/images/hashes/
+      # Mount image folders as volumes
+      - ./images:/app/app/static/images
 
   worker:
     container_name: bftp_w1
