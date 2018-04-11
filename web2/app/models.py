@@ -21,8 +21,7 @@ class Image(Base):
     hash = Column(String(255), nullable=False, index=True)
     created = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
     modified = Column(DateTime)
-    rois = db.relationship('Roi', lazy='select',
-        backref=db.backref('image', lazy='joined'))
+
     rois = db.relationship("Roi", back_populates="image", lazy="dynamic")
 
     def relative_path(self):
