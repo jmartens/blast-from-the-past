@@ -3,6 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <style>
+        * {
+            margin:0;
+            padding: 0
+        }
+
+        .container {
+            display: block;
+            position: relative;
+        }
+
+        .highlight-region {
+            position: absolute;
+            border: 1px solid red;
+        }
+
+        .container:hover > div.highlight-region {
+            opacity: 0.5;
+        }
+
+        .container:hover > div.highlight-region:hover {
+            opacity: 1.0;
+        }
+
+    </style>
 </head>
 <body>
 
@@ -14,10 +39,10 @@
     {% endif %}
 
     {% for image in images.items %}
-    <div>
-        <img src="{{ url_for('static', filename = image.relative_path()) }}" style="max-width: 600px;"/>
+    <div class="container">
+        <img src="{{ url_for('static', filename = image.relative_path()) }}" />
         {% for roi in image.rois %}
-        <div>{{ roi.top, roi.left, roi.bottom, roi.right }}</div>
+        <a href="{{ url_for('roi', id=roi.id) }}"><div class="highlight-region" style="top:{{ roi.top }}px; left: {{ roi.left }}px; width: {{ roi.right - roi.left }}px; height: {{ roi.bottom - roi.top }}px;"></div></a>
         {% endfor %}
     </div>
     {% endfor %}
