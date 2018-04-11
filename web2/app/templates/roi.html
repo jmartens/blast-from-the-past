@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="container">
+        <img src="{{ url_for('static', filename = roi.image.relative_path()) }}"
+             style="position: absolute; left: -{{roi.left}}px; top: -{{roi.top}}px;
+             clip:rect({{roi.top}}px, {{roi.right}}px, {{roi.bottom}}px, {{roi.left}}px);" />
+    </div>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.firstname.label }}<br>
+            {{ form.firstname }}
+        </p>
+        <p>
+            {{ form.lastname.label }}<br>
+            {{ form.lastname }}
+        </p>
+        <input type="submit" value="Go">
+    </form>
+{% endblock %}
