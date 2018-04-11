@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        * {
+            margin:0;
+            padding: 0
+        }
+
+        .container {
+            display: block;
+            position: relative;
+        }
+
+        .highlight-region {
+            position: absolute;
+            border: 1px solid red;
+        }
+
+        .container:hover > div.highlight-region {
+            opacity: 0.5;
+        }
+
+        .container:hover > div.highlight-region:hover {
+            opacity: 1.0;
+        }
+
+    </style>
+</head>
+<body>
+
+    {% block content %}{% endblock %}
+
+</body>
+</html>
+
