@@ -7,6 +7,9 @@ class Config(object):
 
     SERVER_NAME = 'localhost:8080'
 
+    if os.path.exists('/debug*'):
+        DEBUG = True
+
     database = os.environ.get('MYSQL_DATABASE')
     user = os.environ.get('MYSQL_USER')
     password = os.environ.get('MYSQL_PASSWORD')

@@ -15,3 +15,7 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
 from app import routes, models
+
+if app.debug:
+    from werkzeug.debug import DebuggedApplication
+    app = DebuggedApplication(app, True)
