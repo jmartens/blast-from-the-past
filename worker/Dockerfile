@@ -5,7 +5,7 @@ ADD requirements.txt /root/
 RUN pip install --upgrade pip
 RUN pip install -r /root/requirements.txt
 
-WORKDIR /worker/
-ADD bftp-scanner/ /worker/
+WORKDIR /app
+ADD bftp-scanner/ /app/
 
-CMD ["python", "main.py", "--path", "/var/bftp/images/"]
+CMD ["python", "main.py", "--path", "/app/static/images/"]
