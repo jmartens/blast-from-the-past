@@ -100,6 +100,6 @@ class FaceDetector(Thread):
                 self.failurecount += 1
                 logging.debug('Setting failure count to %d', self.failurecount)
 
-            logging.debug('Processing took %0   .2d seconds', (datetime.datetime.now() - start).total_seconds()/1000)
+            logging.debug('Processing took %.2f seconds', (datetime.datetime.now() - start).total_seconds()/1000)
 
         return
