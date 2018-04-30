@@ -1,6 +1,8 @@
 FROM bamos/openface:latest
 
 ADD requirements.txt /root/
+
+RUN pip install --upgrade pip
 RUN pip install -r /root/requirements.txt
 
 WORKDIR /worker/
