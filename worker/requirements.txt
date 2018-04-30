@@ -5,3 +5,4 @@ ndg-httpsclient
 pyasn1
 pymysql
 Pillow
+scandir

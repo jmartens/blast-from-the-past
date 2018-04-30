@@ -14,24 +14,54 @@ import cv2
 import imagehash
 from PIL import Image as PILImage
 
+try:
+    from os import scandir
+except ImportError:
+    # use scandir PyPI module on Python < 3.5
+    from scandir import scandir
+
+
+def scantree(directory):
+    """Recursively yield DirEntry objects for given directory."""
+    list = scandir(directory)
+    try:
+        for entry in list:
+            if entry.is_dir(follow_symlinks=False):
+                for entry in scantree(entry.path):
+                    yield entry
+            else:
+                yield entry
+    except OSError:
+        logging.info('Failed to access')
+        pass
+    except UnicodeDecodeError:
+        logging.info('Illegal filename')
+        pass
+    else:
+        logging.info('Other error')
+        pass
+
 
 class FilesystemScanner(Thread):
 
-    def findfiletypesinfolder(self, path, pattern):
-        logging.debug("Finding image files in %s", path)
-        files = filter(pattern.match, glob.glob(os.path.join(path, '*/*')))
-        logging.debug("Found %d images in %s", len(files), path)
-        return files
+    def findimagesinfolder(self, pattern=('.jpg', '*.jpeg', '.png', '.bmp')):
 
-    def findimagesinfolder(self, path):
-        pattern = r'(.*\.(?:jpe?g|png|bmp))'
-        r = re.compile(pattern, re.IGNORECASE)
-        return self.findfiletypesinfolder(path, r)
+        if not os.path.exists(self.path):
+            raise ValueError("Directory not found {}".format(self.path))
+
+        matches = []
+        logging.info('Start discovering items in %s', self.path)
+        for entry in scantree(self.path):
+            if entry.name.lower().endswith(pattern):
+                matches.append(entry)
+        logging.info('Finished discovering items in %s', self.path)
+        return matches
 
     def run(self):
         self.name = __name__
         logging.info('Discovering image files in: %s', self.path)
-        for f in map(unicode, self.findimagesinfolder(self.path)):
+        for entry in self.findimagesinfolder():
+            f = entry.path
             logging.info('Processing file: %s', f)
 
             logging.debug('Reading file: %s', f)
