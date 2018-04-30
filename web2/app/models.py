@@ -25,7 +25,7 @@ class Image(Base):
     rois = db.relationship("Roi", back_populates="image", lazy="dynamic")
 
     def relative_path(self):
-        return os.path.join(self.path, self.name).replace('/var/bftp/', '')
+        return os.path.join(self.path, self.name).replace('/app/static/', '')
 
 
 class Subject(Base):
