@@ -8,19 +8,15 @@ services:
     volumes:
       - ./mysql:/var/lib/mysql
     environment:
-      - MYSQL_ROOT_PASSWORD_FILE = ./secrets/mysql-root-password
-      - MYSQL_DATABASE_FILE = ./secrets/mysql-db
-      - MYQSL_USER_FILE = ./secrets/mysql-user
-      - MYSQL_PASSWORD_FILE = ./secrets/mysql-password
+      - MYSQL_ROOT_PASSWORD=bftp
+      - MYSQL_DATABASE=bftp
+      - MYSQL_USER=bftp
+      - MYSQL_PASSWORD=bftp
     ports:
       - "3306:3306"
 
   web:
     container_name: bftp_web
-    build: web
-
-  web-new:
-    container_name: btp_web_new
     build:
       context: https://github.com/jmartens/alpine-flask.git#patch-1
     links:
@@ -35,14 +31,21 @@ services:
     volumes:
       # Mount apps root folder as a volume for convenience and quick reload
       - ./web2:/app
-      # Mount storage of hashes as a volume
-      - ./hashes:/app/app/static/images/hashes/
       # Mount image folders as volumes
-      - ./images:/app/app/static/images
+      - ./production/images:/app/static/images
 
   worker:
     container_name: bftp_w1
     build: worker
     links:
       - db
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_DATABASE=bftp
+      - MYSQL_USER=bftp
+      - MYSQL_PASSWORD=bftp
     volumes:
+      # Mount apps root folder as a volume for convenience and quick reload
+      - ./worker/bftp-scanner:/app
+      # Mount image folders as volumes
+      - ./production/images:/app/static/images
