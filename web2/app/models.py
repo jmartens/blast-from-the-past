@@ -28,20 +28,19 @@ class Image(Base):
         return os.path.join(self.path, self.name).replace('/var/bftp/', '')
 
 
-class Object(Base):
-    __tablename__ = 'object'
+class Subject(Base):
+    __tablename__ = 'subject'
 
     id = Column(Integer, primary_key=True)
     roi_id = Column(ForeignKey(u'roi.id'), nullable=False, index=True)
     hash = Column(String(255), nullable=False)
     path = Column(String(255), nullable=False)
-    userid_id = Column(ForeignKey(u'user.user_id'), index=True)
+    user_id = Column(ForeignKey(u'user.id'), index=True)
     created = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
     modified = Column(DateTime)
 
     roi = relationship(u'Roi')
-    userid = relationship(u'User')
-
+    user = relationship(u'User')
 
 class Queue(Base):
     __tablename__ = 'queue'
@@ -71,15 +70,18 @@ class Roi(Base):
     modified = Column(DateTime)
 
     image = relationship(u'Image')
+    subject = relationship("Subject", back_populates="roi", lazy="dynamic")
 
 
 class User(Base):
     __tablename__ = 'user'
 
-    user_id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
     username = Column(String(255), nullable=False)
     password = Column(String(255), nullable=False)
     firstname = Column(String(255), nullable=False)
     lastname = Column(String(255), nullable=False)
     created = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
     modified = Column(DateTime)
+
+    subject = relationship("Subject", back_populates="user", lazy="dynamic")
