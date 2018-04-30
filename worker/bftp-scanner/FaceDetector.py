@@ -5,7 +5,7 @@ import os
 import datetime
 import peewee
 
-from database import ROI, Image, Object, Queue
+from database2 import ROI, Image, Subject as Object, Queue
 
 import cv2
 import imagehash
