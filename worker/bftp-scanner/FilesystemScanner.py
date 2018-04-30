@@ -61,40 +61,40 @@ class FilesystemScanner(Thread):
         self.name = __name__
         logging.info('Discovering image files in: %s', self.path)
         for entry in self.findimagesinfolder():
-            f = entry.path
-            logging.info('Processing file: %s', f)
+            file = entry.path
+            logging.info('Processing file: %s', file)
 
-            logging.debug('Reading file: %s', f)
-            image = cv2.imread(f)
+            logging.debug('Reading file: %s', file)
+            image = cv2.imread(file)
             if image is None:
-                logging.error('Skipping: unable to read file: %s', f)
+                logging.error('Skipping: unable to read file: %s', file)
                 continue
 
-            logging.debug('Checking against %s against database', f)
+            logging.debug('Checking against %s against database', file)
             record, created = Image.get_or_create(
-                path=os.path.dirname(f),
-                name=os.path.basename(f),
-                size=os.path.getsize(f),
-                created=datetime.datetime.fromtimestamp(os.path.getctime(f)).strftime('%Y-%m-%d %H:%M:%S'),
-                modified=datetime.datetime.fromtimestamp(os.path.getmtime(f)).strftime('%Y-%m-%d %H:%M:%S'),
+                path=os.path.dirname(file),
+                name=os.path.basename(file),
+                size=os.path.getsize(file),
+                created=datetime.datetime.fromtimestamp(os.path.getctime(file)).strftime('%Y-%m-%d %H:%M:%S'),
+                modified=datetime.datetime.fromtimestamp(os.path.getmtime(file)).strftime('%Y-%m-%d %H:%M:%S'),
                 hash=str(imagehash.phash(PILImage.fromarray(image))))
 
             if created:
-                logging.info('Adding %s to the queue as it seems to be new', f)
+                logging.info('Adding %s to the queue as it seems to be new', file)
                 Queue.create(image=record.id)
             else:
-                logging.debug('We have seen %s before, checking if it is modified', f)
+                logging.debug('We have seen %s before, checking if it is modified', file)
                 # TODO: find out why date comparison like below keeps evaluating to False while values seem to be equal
-                # (record.modified == datetime.datetime.fromtimestamp(os.path.getmtime(f)).strftime(
+                # (record.modified == datetime.datetime.fromtimestamp(os.path.getmtime(file)).strftime(
                 #     '%Y-%m-%d %H:%M:%S')) & \
-                # (record.created == datetime.datetime.fromtimestamp(os.path.getctime(f)).strftime(
+                # (record.created == datetime.datetime.fromtimestamp(os.path.getctime(file)).strftime(
                 #     '%Y-%m-%d %H:%M:%S')) & \
-                if (os.path.getsize(f) == record.size) & \
+                if (os.path.getsize(file) == record.size) & \
                         (record.hash == str(imagehash.phash(PILImage.fromarray(image)))):
-                    logging.info('Skipping %s as it already exists and seems not to be modified', f)
+                    logging.info('Skipping %s as it already exists and seems not to be modified', file)
                     continue
                 else:
-                    logging.info('Adding %s to the queue as it seems to have changed', f)
+                    logging.info('Adding %s to the queue as it seems to have changed', file)
                     Queue.create(image=record.id)
 
         return
