@@ -39,59 +39,65 @@ class FaceDetector(Thread):
                 file = q.image
 
                 logging.info('Processing file %s', os.path.join(file.path, file.name))
-                logging.debug('Reading file %s', os.path.join(file.path, file.name))
-                image = cv2.imread(os.path.join(file.path, file.name))
+                if os.path.isfile(os.path.join(file.path, file.name)):
+                    logging.debug('Reading file %s', os.path.join(file.path, file.name))
+                    image = cv2.imread(os.path.join(file.path, file.name))
 
-                logging.debug('Detecting faces')
-                faces = self.align.getAllFaceBoundingBoxes(image)
-                numberOfFaces = len(faces)
+                    logging.debug('Detecting faces')
+                    faces = self.align.getAllFaceBoundingBoxes(image)
+                    numberOfFaces = len(faces)
 
-                if numberOfFaces > 0:
+                    if numberOfFaces > 0:
 
-                    logging.info('Detected faces: %d', numberOfFaces)
-                    i = 0
+                        logging.info('Detected faces: %d', numberOfFaces)
+                        i = 0
 
-                    logging.info('Processing detected faces')
-                    for face in faces:
-                        i = i + 1
-                        logging.info('Processing face %d of %d at (%d, %d, %d, %d)',
-                                      i,
-                                      numberOfFaces,
-                                      face.left(),
-                                      face.top(),
-                                      face.right(),
-                                      face.bottom())
-                        logging.debug('Store bounding box location in database and link to image');
-                        roirec = ROI.create(image=file.id,
-                                            left=face.left(),
-                                            top=face.top(),
-                                            bottom=face.bottom(),
-                                            right=face.right())
+                        logging.info('Processing detected faces')
+                        for face in faces:
+                            i = i + 1
+                            logging.info('Processing face %d of %d at (%d, %d, %d, %d)',
+                                          i,
+                                          numberOfFaces,
+                                          face.left(),
+                                          face.top(),
+                                          face.right(),
+                                          face.bottom())
+                            logging.debug('Store bounding box location in database and link to image');
+                            roirec = ROI.create(image=file.id,
+                                                left=face.left(),
+                                                top=face.top(),
+                                                bottom=face.bottom(),
+                                                right=face.right())
 
-                        # Process ROI for feeding it to the model
-                        logging.debug('Aligning face for model training')
-                        alignedFace = self.align.align(
-                            self.imgDim,
-                            image,
-                            face,
-                            landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
+                            # Process ROI for feeding it to the model
+                            logging.debug('Aligning face for model training')
+                            alignedFace = self.align.align(
+                                self.imgDim,
+                                image,
+                                face,
+                                landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
 
-                        # Store processed ROI on filesystem
-                        phash = str(imagehash.phash(PILImage.fromarray(alignedFace)))
-                        logging.debug('Hashed face: %s', phash)
-                        hashedImage = os.path.join('/var/bftp/hashes', phash + '.jpg')
-                        cv2.imwrite(hashedImage, alignedFace)
-                        Object.create(roi=roirec.id,
-                                      hash=phash,
-                                      path=hashedImage,
-                                      userid=None)
-                        logging.debug('Saved face as %s', hashedImage)
+                            # Store processed ROI on filesystem
+                            phash = str(imagehash.phash(PILImage.fromarray(alignedFace)))
+                            logging.debug('Hashed face: %s', phash)
+                            hashedImage = os.path.join('/app/static/images/hashes', phash + '.jpg')
+                            cv2.imwrite(hashedImage, alignedFace)
+                            Object.create(roi=roirec.id,
+                                          hash=phash,
+                                          path=hashedImage,
+                                          userid=None)
+                            logging.debug('Saved face as %s', hashedImage)
 
-                    q.status = numberOfFaces
+                        q.status = numberOfFaces
+
+                    else:
+                        logging.info('No faces detected')
+                        q.status = 0
 
                 else:
-                    logging.info('No faces detected')
-                    q.status = 0
+                    # file not found
+                    logging.error('File not found: %s', os.path.join(file.path, file.name))
+                    q.status = -1
 
                 logging.debug('Updating status to %d', q.status)
                 q.save()
