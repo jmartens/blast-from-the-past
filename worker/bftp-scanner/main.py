@@ -81,8 +81,9 @@ if __name__ == "__main__":
             faceDetector.start()
 
             while True:
-                logging.debug('Sleeping for 1 second...')
-                time.sleep(1)
+                sleep = 1
+                logging.debug('Sleeping for %d second...', sleep)
+                time.sleep(sleep)
 
         except KeyboardInterrupt:
             fsScanner.stop()
